@@ -66,7 +66,8 @@ public class WarehouseService {
 	
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
-		HttpEntity<JsonObject> request = new HttpEntity<>(builder.build(), headers);
+		JsonObject o  = builder.build();
+		HttpEntity<String> request = new HttpEntity<>(o.toString(), headers);
 		ResponseEntity<String> resp = template.postForEntity(requestUrl, request, String.class);
 		System.out.println(resp.getBody());
 		System.out.println("TEST TEST");
@@ -85,7 +86,6 @@ public class WarehouseService {
 		orderStatus.setOrderId(jObject.getString("orderId"));
 		orderStatusRepo.insertOrderStatus(orderStatus);
 		
-		return null;
-
+		return orderStatus;
 	}
 }

@@ -23,6 +23,7 @@ import jakarta.json.JsonReader;
 import vttp2022.paf.assessment.eshop.models.Customer;
 import vttp2022.paf.assessment.eshop.models.LineItem;
 import vttp2022.paf.assessment.eshop.models.Order;
+import vttp2022.paf.assessment.eshop.models.OrderStatus;
 import vttp2022.paf.assessment.eshop.respositories.OrderRepository;
 import vttp2022.paf.assessment.eshop.services.CustomerService;
 import vttp2022.paf.assessment.eshop.services.OrderStatusService;
@@ -81,18 +82,13 @@ public class OrderController {
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(o.toString());
 		}
 
-		warehouseService.dispatch(order);
+		OrderStatus orderstatus = warehouseService.dispatch(order);
 
-		SqlRowSet rs = orderStatusService.findOrderStatusByOrderId(order.getOrderId());
 
-		String orderId = rs.getString("order_id");
-		String deliveryId = rs.getString("delivery_id");
-		String status = rs.getString("status");
-
-		if (deliveryId == null){
+		if (orderstatus.getDeliveryId() == null){
 			JsonObject o = Json.createObjectBuilder()
-				.add("orderId", orderId)
-				.add("status", status)
+				.add("orderId", orderstatus.getOrderId())
+				.add("status", orderstatus.getStatus())
 				.build();
 
 				return ResponseEntity.status(HttpStatus.OK).body(o.toString());
@@ -100,9 +96,9 @@ public class OrderController {
 		}
 
 		JsonObject o = Json.createObjectBuilder()
-		.add("orderId", orderId)
-		.add("deliverId", deliveryId)
-		.add("status", status)
+		.add("orderId", orderstatus.getOrderId())
+		.add("deliverId", orderstatus.getDeliveryId())
+		.add("status", orderstatus.getStatus())
 		.build();
 
 		return ResponseEntity.status(HttpStatus.OK).body(o.toString());
