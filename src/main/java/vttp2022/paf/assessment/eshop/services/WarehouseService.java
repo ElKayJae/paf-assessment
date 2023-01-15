@@ -9,10 +9,10 @@ import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -61,30 +61,35 @@ public class WarehouseService {
 		UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromUriString(URL);
 		String requestUrl = uriBuilder.buildAndExpand(urlParams).toUriString();
 		System.out.println(requestUrl);
-		System.out.println(builder.build().toString());
-		RestTemplate template = new RestTemplate();
-	
-		HttpHeaders headers = new HttpHeaders();
-		headers.setContentType(MediaType.APPLICATION_JSON);
 		JsonObject o  = builder.build();
-		HttpEntity<String> request = new HttpEntity<>(o.toString(), headers);
-		ResponseEntity<String> resp = template.postForEntity(requestUrl, request, String.class);
-		System.out.println(resp.getBody());
-		System.out.println("TEST TEST");
-		String payload = resp.getBody();
-		InputStream is = new ByteArrayInputStream(payload.getBytes());
-		JsonReader r = Json.createReader(is);
-		JsonObject jObject = r.readObject();
-		String deliveryId = jObject.getString("deliveryId");
-		String status = "dispatched";
-		if (null == deliveryId){
-			status = "pending";
-		}
+		System.out.println(o.toString());
 		OrderStatus orderStatus = new OrderStatus();
-		orderStatus.setDeliveryId(deliveryId);
-		orderStatus.setStatus(status);
-		orderStatus.setOrderId(jObject.getString("orderId"));
+
+		try {
+			
+			RestTemplate template = new RestTemplate();
+			HttpHeaders headers = new HttpHeaders();
+			headers.setContentType(MediaType.APPLICATION_JSON);
+			HttpEntity<String> request = new HttpEntity<>(o.toString(), headers);
+			ResponseEntity<String> resp = template.postForEntity(requestUrl, request, String.class);
+			System.out.println(resp.getBody());
+			String payload = resp.getBody();
+			InputStream is = new ByteArrayInputStream(payload.getBytes());
+			JsonReader r = Json.createReader(is);
+			JsonObject jObject = r.readObject();
+			String deliveryId = jObject.getString("deliveryId");
+			orderStatus.setDeliveryId(deliveryId);
+			orderStatus.setStatus("dispatched");
+			orderStatus.setOrderId(jObject.getString("orderId"));
+
+		} catch (RestClientException e) {
+			System.out.println(e.getMessage());
+
+			orderStatus.setOrderId(order.getOrderId());
+			orderStatus.setStatus("pending");
+		}
 		orderStatusRepo.insertOrderStatus(orderStatus);
+		System.out.println(orderStatus.getDeliveryId());
 		
 		return orderStatus;
 	}
